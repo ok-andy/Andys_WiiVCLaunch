@@ -13,9 +13,10 @@ DECL_FUNCTION(int32_t, CMPTAcctSetScreenType, CmptScreenType type)
         after that we never override a "DRC only" argument */
     if (gForwarderDisplayOverride != DISPLAY_OPTION_CHOOSE &&
         (!sAlreadyOverride || type != CMPT_SCREEN_TYPE_DRC) &&
-        OSGetTitleID() == _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_HEALTH_AND_SAFETY)) { //only do for homebrew
+        OSGetTitleID() == _SYSGetSystemApplicationTitleId(SYSTEM_APP_ID_HEALTH_AND_SAFETY))
+    { // only do for homebrew
         sAlreadyOverride = true;
-        type = (CmptScreenType) gForwarderDisplayOverride;
+        type = (CmptScreenType)gForwarderDisplayOverride;
     }
     return real_CMPTAcctSetScreenType(type);
 }

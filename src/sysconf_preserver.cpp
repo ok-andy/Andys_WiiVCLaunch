@@ -8,23 +8,28 @@ void backupSysconf()
     if (initMocha() != MOCHA_RESULT_SUCCESS)
         return;
 
-    if (MountWrapper("slccmpt01", "/dev/slccmpt01", "/vol/storage_slccmpt01") != MOCHA_RESULT_SUCCESS) {
+    if (MountWrapper("slccmpt01", "/dev/slccmpt01", "/vol/storage_slccmpt01") != MOCHA_RESULT_SUCCESS)
+    {
         Mocha_DeInitLibrary();
         return;
     }
 
-    try {
+    try
+    {
         bool copySuccess = std::filesystem::copy_file("slccmpt01:/shared2/sys/SYSCONF",
                                                       "/vol/external01/wiiu/SYSCONF",
                                                       std::filesystem::copy_options::overwrite_existing);
-        if (copySuccess) {
+        if (copySuccess)
+        {
             WUPSStorageAPI::Store("restoreSysconf", true);
             WUPSStorageAPI::SaveStorage();
         }
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         DEBUG_FUNCTION_LINE_ERR("Copy exception: %s", e.what());
     }
-    
+
     Mocha_UnmountFS("slccmpt01");
     Mocha_DeInitLibrary();
 }
@@ -35,38 +40,46 @@ void restoreSysconfIfNeeded()
     WUPSStorageAPI::Get("restoreSysconf", restoreCheck);
     if (!restoreCheck)
         return;
-    
+
     WUPSStorageAPI::Store("restoreSysconf", false);
     WUPSStorageAPI::SaveStorage();
-    
-    try {
+
+    try
+    {
         auto fileSize = std::filesystem::file_size("/vol/external01/wiiu/SYSCONF");
-        if (fileSize != 0x4000) {
+        if (fileSize != 0x4000)
+        {
             DEBUG_FUNCTION_LINE_ERR("SD's SYSCONF is wrong size, should be 16,384 bytes");
             return;
         }
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         DEBUG_FUNCTION_LINE_ERR("File size exception: %s", e.what());
         return;
     }
-    
+
     if (initMocha() != MOCHA_RESULT_SUCCESS)
         return;
 
-    if (MountWrapper("slccmpt01", "/dev/slccmpt01", "/vol/storage_slccmpt01") != MOCHA_RESULT_SUCCESS) {
+    if (MountWrapper("slccmpt01", "/dev/slccmpt01", "/vol/storage_slccmpt01") != MOCHA_RESULT_SUCCESS)
+    {
         Mocha_DeInitLibrary();
         return;
     }
 
-    try {
+    try
+    {
         std::filesystem::copy_file("/vol/external01/wiiu/SYSCONF",
                                    "slccmpt01:/shared2/sys/SYSCONF",
                                    std::filesystem::copy_options::overwrite_existing);
         std::filesystem::remove("/vol/external01/wiiu/SYSCONF");
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         DEBUG_FUNCTION_LINE_ERR("Copy exception: %s", e.what());
     }
-    
+
     Mocha_UnmountFS("slccmpt01");
     Mocha_DeInitLibrary();
 }

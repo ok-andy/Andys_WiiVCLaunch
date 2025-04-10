@@ -41,20 +41,20 @@ DEINITIALIZE_PLUGIN()
 
 extern "C" int32_t CMPTAcctSetDrcCtrlEnabled(int32_t enable);
 
-static OSDynLoad_Module erreulaModule                                               = nullptr;
-//ErrEula functions copied from <erreula/rpl_interface.h> in wut
-static void (*dyn_ErrEulaAppearError)(const nn::erreula::AppearArg &arg)            = nullptr;
-static void (*dyn_ErrEulaCalc)(const nn::erreula::ControllerInfo &controllerInfo)   = nullptr;
-static void (*dyn_ErrEulaDisappearError)()                                          = nullptr;
-static nn::erreula::State (*dyn_ErrEulaGetStateErrorViewer)()                       = nullptr;
-static bool (*dyn_ErrEulaIsDecideSelectLeftButtonError)()                           = nullptr;
-static bool (*dyn_ErrEulaIsDecideSelectRightButtonError)()                          = nullptr;
+static OSDynLoad_Module erreulaModule = nullptr;
+// ErrEula functions copied from <erreula/rpl_interface.h> in wut
+static void (*dyn_ErrEulaAppearError)(const nn::erreula::AppearArg &arg) = nullptr;
+static void (*dyn_ErrEulaCalc)(const nn::erreula::ControllerInfo &controllerInfo) = nullptr;
+static void (*dyn_ErrEulaDisappearError)() = nullptr;
+static nn::erreula::State (*dyn_ErrEulaGetStateErrorViewer)() = nullptr;
+static bool (*dyn_ErrEulaIsDecideSelectLeftButtonError)() = nullptr;
+static bool (*dyn_ErrEulaIsDecideSelectRightButtonError)() = nullptr;
 
 static bool sLaunchingWiiGame = false;
 static bool sInputRedirectionActive = false;
 static bool sUserCancelledCustomDialogs = false;
 
-//remap buttons functions copied from https://github.com/wiiu-env/WiiUPluginLoaderBackend/blob/cb527add76c95bff3fb1ddef7a016fec3db4c497/source/utils/ConfigUtils.cpp#LL35C7-L35C7
+// remap buttons functions copied from https://github.com/wiiu-env/WiiUPluginLoaderBackend/blob/cb527add76c95bff3fb1ddef7a016fec3db4c497/source/utils/ConfigUtils.cpp#LL35C7-L35C7
 static uint32_t remapWiiMoteButtons(uint32_t buttons)
 {
     uint32_t convButtons = 0;
@@ -139,9 +139,9 @@ static uint32_t remapClassicButtons(uint32_t buttons)
         convButtons |= VPAD_BUTTON_L;
 
     return convButtons;
-} //end of copied functions
+} // end of copied functions
 
-static const char * displayOptionToStringWithoutIcons(int32_t displayOption)
+static const char *displayOptionToStringWithoutIcons(int32_t displayOption)
 {
     // the GamePad icon doesn't look good on the notification's small font size
     switch (displayOption)
@@ -159,7 +159,7 @@ static const char * displayOptionToStringWithoutIcons(int32_t displayOption)
     }
 }
 
-static const char16_t * displayOptionToString16(int32_t displayOption)
+static const char16_t *displayOptionToString16(int32_t displayOption)
 {
     switch (displayOption)
     {
@@ -185,15 +185,22 @@ static void showAutolaunchNotification(int32_t displayOption)
 
 static void setResolution(int32_t resolution)
 {
-    if (resolution == SET_RESOLUTION_NONE) return;
+    if (resolution == SET_RESOLUTION_NONE)
+        return;
 
-    if (resolution == SET_RESOLUTION_576I || resolution == SET_RESOLUTION_576I_43) {
+    if (resolution == SET_RESOLUTION_576I || resolution == SET_RESOLUTION_576I_43)
+    {
         AVMSetTVVideoRegion(AVM_TV_VIDEO_REGION_PAL, TVEGetCurrentPort(), AVM_TV_RESOLUTION_576I);
-    } else {
-        if (resolution > SET_RESOLUTION_4_3_MODIFIER) {
-            AVMSetTVScanResolution((AVMTvResolution) (resolution - SET_RESOLUTION_4_3_MODIFIER));
-        } else {
-            AVMSetTVScanResolution((AVMTvResolution) resolution);
+    }
+    else
+    {
+        if (resolution > SET_RESOLUTION_4_3_MODIFIER)
+        {
+            AVMSetTVScanResolution((AVMTvResolution)(resolution - SET_RESOLUTION_4_3_MODIFIER));
+        }
+        else
+        {
+            AVMSetTVScanResolution((AVMTvResolution)resolution);
         }
     }
 
@@ -203,12 +210,15 @@ static void setResolution(int32_t resolution)
 
 static void setDisplay(int32_t displayOption)
 {
-    if (displayOption == DISPLAY_OPTION_USE_DRC) {
+    if (displayOption == DISPLAY_OPTION_USE_DRC)
+    {
         CMPTAcctSetScreenType(CMPT_SCREEN_TYPE_BOTH);
         CMPTAcctSetDrcCtrlEnabled(1);
-    } else {
+    }
+    else
+    {
         CMPTAcctSetDrcCtrlEnabled(0);
-        CMPTAcctSetScreenType((CmptScreenType) displayOption);
+        CMPTAcctSetScreenType((CmptScreenType)displayOption);
     }
 
     if (CMPTCheckScreenState() < 0)
@@ -222,27 +232,36 @@ ON_APPLICATION_START()
 #endif
     if (OSGetTitleID() == 0x0005001010040000 || // Wii U Menu JPN
         OSGetTitleID() == 0x0005001010040100 || // Wii U Menu USA
-        OSGetTitleID() == 0x0005001010040200) { // Wii U Menu EUR
+        OSGetTitleID() == 0x0005001010040200)
+    { // Wii U Menu EUR
         gInWiiUMenu = true;
         sLaunchingWiiGame = false;
-    } else {
+    }
+    else
+    {
         gInWiiUMenu = false;
     }
 }
 
-//patch the app type of Wii games to a Wii U game on the Wii U Menu. This avoids the built in Wii dialogs
+// patch the app type of Wii games to a Wii U game on the Wii U Menu. This avoids the built in Wii dialogs
 DECL_FUNCTION(int32_t, MCP_TitleList, int32_t handle, uint32_t *outTitleCount, MCPTitleListType *titleList, uint32_t size)
 {
     int32_t result = real_MCP_TitleList(handle, outTitleCount, titleList, size);
 
-    if (gUseCustomDialogs && gInWiiUMenu) {
-        if (result == 0 && outTitleCount && titleList && size != 0) {
+    if (gUseCustomDialogs && gInWiiUMenu)
+    {
+        if (result == 0 && outTitleCount && titleList && size != 0)
+        {
             DEBUG_FUNCTION_LINE_INFO("Patching MCP_TitleList in Wii U Menu");
             uint32_t titleCount = *outTitleCount;
-            for (uint32_t i = 0; i < titleCount; i++) {
-                if (titleList[i].appType == MCP_APP_TYPE_GAME_WII) titleList[i].appType = MCP_APP_TYPE_GAME;
+            for (uint32_t i = 0; i < titleCount; i++)
+            {
+                if (titleList[i].appType == MCP_APP_TYPE_GAME_WII)
+                    titleList[i].appType = MCP_APP_TYPE_GAME;
             }
-        } else {
+        }
+        else
+        {
             DEBUG_FUNCTION_LINE_WARN("Either real_MCP_TitleList did not return 0 (returned %d)", result);
             DEBUG_FUNCTION_LINE_WARN("or outTitleCount == nullptr or titleList == nullptr");
         }
@@ -255,30 +274,36 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
 {
     int32_t result = real_ACPGetLaunchMetaXml(metaXml);
 
-    if (!gUseCustomDialogs || !gInWiiUMenu) {
+    if (!gUseCustomDialogs || !gInWiiUMenu)
+    {
         return result;
-    } else if (result != ACP_RESULT_SUCCESS) {
+    }
+    else if (result != ACP_RESULT_SUCCESS)
+    {
         sLaunchingWiiGame = false;
         return result;
-    } else if (sLaunchingWiiGame) {
-        //the rest of this function has already ran once, no need to run again (ACPGetLaunchMetaXml can get called twice)
+    }
+    else if (sLaunchingWiiGame)
+    {
+        // the rest of this function has already ran once, no need to run again (ACPGetLaunchMetaXml can get called twice)
         return ACP_RESULT_SUCCESS;
     }
 
-    //check if wii game launched, if not then return
+    // check if wii game launched, if not then return
     MCPTitleListType titleInfo;
     int32_t mcpHandle = MCP_Open();
     MCPError mcpError = MCP_GetTitleInfo(mcpHandle, metaXml->title_id, &titleInfo);
     MCP_Close(mcpHandle);
-    if (mcpError != 0 || titleInfo.appType != MCP_APP_TYPE_GAME_WII) {
+    if (mcpError != 0 || titleInfo.appType != MCP_APP_TYPE_GAME_WII)
+    {
         return ACP_RESULT_SUCCESS;
     }
     sLaunchingWiiGame = true;
 
-    //read drc_use value
+    // read drc_use value
     const bool DRC_USE = metaXml->drc_use == 65537;
 
-    //check if A button held, if so then skip autolaunch check
+    // check if A button held, if so then skip autolaunch check
     VPADStatus vpadStatus{};
     VPADReadError vpadError = VPAD_READ_UNINITIALIZED;
     KPADStatus kpadStatus[4];
@@ -286,64 +311,81 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
     uint32_t buttonsHeld = 0;
     bool activateCursor = true;
 
-    if (VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError) > 0 && vpadError == VPAD_READ_SUCCESS) {
+    if (VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError) > 0 && vpadError == VPAD_READ_SUCCESS)
+    {
         buttonsHeld = vpadStatus.hold;
     }
 
-    for (int32_t chan = 0; chan < 4; chan++) {
-        if (KPADReadEx((KPADChan) chan, &kpadStatus[chan], 1, &kpadError[chan]) > 0) {
-            if (kpadError[chan] == KPAD_ERROR_OK && kpadStatus[chan].extensionType != 0xFF) {
+    for (int32_t chan = 0; chan < 4; chan++)
+    {
+        if (KPADReadEx((KPADChan)chan, &kpadStatus[chan], 1, &kpadError[chan]) > 0)
+        {
+            if (kpadError[chan] == KPAD_ERROR_OK && kpadStatus[chan].extensionType != 0xFF)
+            {
                 if (kpadStatus[chan].extensionType == WPAD_EXT_CORE || kpadStatus[chan].extensionType == WPAD_EXT_NUNCHUK ||
-                    kpadStatus[chan].extensionType == WPAD_EXT_MPLUS || kpadStatus[chan].extensionType == WPAD_EXT_MPLUS_NUNCHUK) {
+                    kpadStatus[chan].extensionType == WPAD_EXT_MPLUS || kpadStatus[chan].extensionType == WPAD_EXT_MPLUS_NUNCHUK)
+                {
                     buttonsHeld |= remapWiiMoteButtons(kpadStatus[chan].hold);
-                } else {
+                }
+                else
+                {
                     buttonsHeld |= remapClassicButtons(kpadStatus[chan].classic.hold);
                 }
             }
         }
     }
 
-    if (!(buttonsHeld & VPAD_BUTTON_A)) {
-        //check autolaunch
-        if (DRC_USE && gAutolaunchDRCSupported != DISPLAY_OPTION_CHOOSE) {
+    if (!(buttonsHeld & VPAD_BUTTON_A))
+    {
+        // check autolaunch
+        if (DRC_USE && gAutolaunchDRCSupported != DISPLAY_OPTION_CHOOSE)
+        {
             setDisplay(gAutolaunchDRCSupported);
             if (gNotificationTheme != NOTIFICATION_THEME_OFF)
                 showAutolaunchNotification(gAutolaunchDRCSupported);
             return ACP_RESULT_SUCCESS;
-        } else if (!DRC_USE && gAutolaunchNoDRCSupport != DISPLAY_OPTION_CHOOSE) {
+        }
+        else if (!DRC_USE && gAutolaunchNoDRCSupport != DISPLAY_OPTION_CHOOSE)
+        {
             setDisplay(gAutolaunchNoDRCSupport);
             if (gNotificationTheme != NOTIFICATION_THEME_OFF)
                 showAutolaunchNotification(gAutolaunchNoDRCSupport);
             return ACP_RESULT_SUCCESS;
         }
-    } else {
+    }
+    else
+    {
         activateCursor = false;
     }
 
-    //load erreula
-    if (OSDynLoad_Acquire("erreula.rpl", &erreulaModule) != OS_DYNLOAD_OK) {
+    // load erreula
+    if (OSDynLoad_Acquire("erreula.rpl", &erreulaModule) != OS_DYNLOAD_OK)
+    {
         return ACP_RESULT_SUCCESS;
     }
-    if (OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaAppearError__3RplFRCQ3_2nn7erreula9AppearArg", (void**) &dyn_ErrEulaAppearError) != OS_DYNLOAD_OK ||
-        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaCalc__3RplFRCQ3_2nn7erreula14ControllerInfo", (void**) &dyn_ErrEulaCalc) != OS_DYNLOAD_OK ||
-        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaDisappearError__3RplFv", (void**) &dyn_ErrEulaDisappearError) != OS_DYNLOAD_OK ||
-        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaGetStateErrorViewer__3RplFv", (void**) &dyn_ErrEulaGetStateErrorViewer) != OS_DYNLOAD_OK ||
-        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaIsDecideSelectLeftButtonError__3RplFv", (void**) &dyn_ErrEulaIsDecideSelectLeftButtonError) != OS_DYNLOAD_OK ||
-        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaIsDecideSelectRightButtonError__3RplFv", (void**) &dyn_ErrEulaIsDecideSelectRightButtonError) != OS_DYNLOAD_OK) {
-        
+    if (OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaAppearError__3RplFRCQ3_2nn7erreula9AppearArg", (void **)&dyn_ErrEulaAppearError) != OS_DYNLOAD_OK ||
+        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaCalc__3RplFRCQ3_2nn7erreula14ControllerInfo", (void **)&dyn_ErrEulaCalc) != OS_DYNLOAD_OK ||
+        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaDisappearError__3RplFv", (void **)&dyn_ErrEulaDisappearError) != OS_DYNLOAD_OK ||
+        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaGetStateErrorViewer__3RplFv", (void **)&dyn_ErrEulaGetStateErrorViewer) != OS_DYNLOAD_OK ||
+        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaIsDecideSelectLeftButtonError__3RplFv", (void **)&dyn_ErrEulaIsDecideSelectLeftButtonError) != OS_DYNLOAD_OK ||
+        OSDynLoad_FindExport(erreulaModule, OS_DYNLOAD_EXPORT_FUNC, "ErrEulaIsDecideSelectRightButtonError__3RplFv", (void **)&dyn_ErrEulaIsDecideSelectRightButtonError) != OS_DYNLOAD_OK)
+    {
+
         OSDynLoad_Release(erreulaModule);
         return ACP_RESULT_SUCCESS;
     }
 
     int32_t recent[4] = {DISPLAY_OPTION_USE_DRC, DISPLAY_OPTION_TV, DISPLAY_OPTION_BOTH, DISPLAY_OPTION_DRC};
-    //read recent order
-    if (gDisplayOptionsOrder == DISPLAY_OPTIONS_ORDER_RECENT) {
+    // read recent order
+    if (gDisplayOptionsOrder == DISPLAY_OPTIONS_ORDER_RECENT)
+    {
         if (WUPSStorageAPI::Get("recent0", recent[0]) != WUPS_STORAGE_ERROR_SUCCESS ||
             WUPSStorageAPI::Get("recent1", recent[1]) != WUPS_STORAGE_ERROR_SUCCESS ||
             WUPSStorageAPI::Get("recent2", recent[2]) != WUPS_STORAGE_ERROR_SUCCESS ||
-            WUPSStorageAPI::Get("recent3", recent[3]) != WUPS_STORAGE_ERROR_SUCCESS) {
-            
-            //failed to read values from storage - use default values
+            WUPSStorageAPI::Get("recent3", recent[3]) != WUPS_STORAGE_ERROR_SUCCESS)
+        {
+
+            // failed to read values from storage - use default values
             recent[0] = DISPLAY_OPTION_USE_DRC;
             recent[1] = DISPLAY_OPTION_TV;
             recent[2] = DISPLAY_OPTION_BOTH;
@@ -351,7 +393,7 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
         }
     }
 
-    //set the values for the error viewer that we will keep the same
+    // set the values for the error viewer that we will keep the same
     nn::erreula::AppearArg appearArg;
     appearArg.errorArg.renderTarget = nn::erreula::RenderTarget::Both;
     appearArg.errorArg.controllerType = nn::erreula::ControllerType::DrcGamepad;
@@ -361,37 +403,45 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
     int32_t selectedDisplay = recent[0];
     int32_t position[2] = {recent[0], recent[1]};
 
-    while (true) {
+    while (true)
+    {
         OSSleepTicks(OSMillisecondsToTicks(16));
 
-        if (ProcUIInForeground() == FALSE) {
+        if (ProcUIInForeground() == FALSE)
+        {
             sLaunchingWiiGame = false;
             break;
         }
 
         if (dyn_ErrEulaGetStateErrorViewer() != nn::erreula::State::Visible && dyn_ErrEulaGetStateErrorViewer() != nn::erreula::State::Hidden)
             continue;
-        
-        if (redraw) {
+
+        if (redraw)
+        {
             redraw = false;
 
             uint32_t positionI = 0;
             uint32_t skippedOptionsCount = 0;
-            bool tvConnected = true; //default to true so tv options are always displayed if non-hdmi is used
-            if (TVEGetCurrentPort() == TVE_PORT_HDMI) {
+            bool tvConnected = true; // default to true so tv options are always displayed if non-hdmi is used
+            if (TVEGetCurrentPort() == TVE_PORT_HDMI)
+            {
                 TVEHdmiState hdmiState = TVE_HDMI_STATE_HTPG_OFF;
                 AVMGetHDMIState(&hdmiState);
                 if (hdmiState != TVE_HDMI_STATE_DONE && hdmiState != TVE_HDMI_STATE_3RDA)
                     tvConnected = false;
             }
-            
-            for (uint32_t recentI = 0; recentI < 4; recentI++) {
+
+            for (uint32_t recentI = 0; recentI < 4; recentI++)
+            {
                 if (!DRC_USE && recent[recentI] == DISPLAY_OPTION_USE_DRC)
                     continue;
-                if (tvConnected && !onFirstPage && skippedOptionsCount < 2) {
+                if (tvConnected && !onFirstPage && skippedOptionsCount < 2)
+                {
                     skippedOptionsCount++;
                     continue;
-                } else if (!tvConnected && (recent[recentI] == DISPLAY_OPTION_TV || recent[recentI] == DISPLAY_OPTION_BOTH)) {
+                }
+                else if (!tvConnected && (recent[recentI] == DISPLAY_OPTION_TV || recent[recentI] == DISPLAY_OPTION_BOTH))
+                {
                     continue;
                 }
                 position[positionI] = recent[recentI];
@@ -400,55 +450,74 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
                     break;
             }
 
-            if (positionI == 0) { //should never happen - filter returned 0 options
+            if (positionI == 0)
+            { // should never happen - filter returned 0 options
                 break;
-            } else if (positionI == 1) {
+            }
+            else if (positionI == 1)
+            {
                 position[1] = position[0];
                 appearArg.errorArg.errorType = nn::erreula::ErrorType::Message1Button;
-            } else {
+            }
+            else
+            {
                 appearArg.errorArg.button2Label = displayOptionToString16(position[1]);
                 appearArg.errorArg.errorType = nn::erreula::ErrorType::Message2Button;
             }
             appearArg.errorArg.button1Label = displayOptionToString16(position[0]);
-            if (tvConnected) {
+            if (tvConnected)
+            {
                 appearArg.errorArg.errorMessage = u"\n\nSelect a display option.\n\n\n\uE07D More options";
-            } else {
+            }
+            else
+            {
                 appearArg.errorArg.errorMessage = u"\n\nSelect a display option.\n\n\n\uE07D Detect TV";
             }
             dyn_ErrEulaAppearError(appearArg);
             continue;
         }
 
-        if (dyn_ErrEulaIsDecideSelectLeftButtonError()) {
+        if (dyn_ErrEulaIsDecideSelectLeftButtonError())
+        {
             selectedDisplay = position[0];
             break;
-        } else if (dyn_ErrEulaIsDecideSelectRightButtonError()) {
-            //note when using Message1Button, IsDecideSelectRight returns true, IsDecideSelectLeft returns false
+        }
+        else if (dyn_ErrEulaIsDecideSelectRightButtonError())
+        {
+            // note when using Message1Button, IsDecideSelectRight returns true, IsDecideSelectLeft returns false
             selectedDisplay = position[1];
             break;
         }
 
         buttonsHeld = 0;
 
-        if (VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError) > 0 && vpadError == VPAD_READ_SUCCESS) {
+        if (VPADRead(VPAD_CHAN_0, &vpadStatus, 1, &vpadError) > 0 && vpadError == VPAD_READ_SUCCESS)
+        {
             buttonsHeld = vpadStatus.hold;
         }
 
-        for (int32_t chan = 0; chan < 4; chan++) {
-            if (KPADReadEx((KPADChan) chan, &kpadStatus[chan], 1, &kpadError[chan]) > 0) {
-                if (kpadError[chan] == KPAD_ERROR_OK && kpadStatus[chan].extensionType != 0xFF) {
+        for (int32_t chan = 0; chan < 4; chan++)
+        {
+            if (KPADReadEx((KPADChan)chan, &kpadStatus[chan], 1, &kpadError[chan]) > 0)
+            {
+                if (kpadError[chan] == KPAD_ERROR_OK && kpadStatus[chan].extensionType != 0xFF)
+                {
                     if (kpadStatus[chan].extensionType == WPAD_EXT_CORE || kpadStatus[chan].extensionType == WPAD_EXT_NUNCHUK ||
-                        kpadStatus[chan].extensionType == WPAD_EXT_MPLUS || kpadStatus[chan].extensionType == WPAD_EXT_MPLUS_NUNCHUK) {
+                        kpadStatus[chan].extensionType == WPAD_EXT_MPLUS || kpadStatus[chan].extensionType == WPAD_EXT_MPLUS_NUNCHUK)
+                    {
                         buttonsHeld |= remapWiiMoteButtons(kpadStatus[chan].hold);
-                    } else {
+                    }
+                    else
+                    {
                         buttonsHeld |= remapClassicButtons(kpadStatus[chan].classic.hold);
                     }
                 }
             }
         }
 
-        if (activateCursor) {
-            //pass a fake input into Calc to activate the select cursor by default when the dialog appears
+        if (activateCursor)
+        {
+            // pass a fake input into Calc to activate the select cursor by default when the dialog appears
             activateCursor = false;
             vpadStatus.hold = VPAD_BUTTON_LEFT;
             kpadStatus[0].hold = WPAD_BUTTON_LEFT;
@@ -462,36 +531,45 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
             dyn_ErrEulaCalc(controllerInfo);
         }
 
-        if (buttonsHeld & VPAD_BUTTON_DOWN || buttonsHeld & VPAD_BUTTON_UP) {
+        if (buttonsHeld & VPAD_BUTTON_DOWN || buttonsHeld & VPAD_BUTTON_UP)
+        {
             redraw = true;
             activateCursor = true;
             onFirstPage = !onFirstPage;
             dyn_ErrEulaDisappearError();
-        } else if (buttonsHeld & VPAD_BUTTON_B) {
+        }
+        else if (buttonsHeld & VPAD_BUTTON_B)
+        {
             sUserCancelledCustomDialogs = true;
             sLaunchingWiiGame = false;
             break;
         }
-        
-    } //end while
+
+    } // end while
 
     if (!sUserCancelledCustomDialogs)
         dyn_ErrEulaDisappearError();
     OSDynLoad_Release(erreulaModule);
 
-    if (sUserCancelledCustomDialogs) {
-        return ACP_RESULT_MEDIA_NOT_READY; //return error to abort launching
-    } else if (!sLaunchingWiiGame) {
-        return ACP_RESULT_SUCCESS; //return early if we're exiting from ProcUI
+    if (sUserCancelledCustomDialogs)
+    {
+        return ACP_RESULT_MEDIA_NOT_READY; // return error to abort launching
+    }
+    else if (!sLaunchingWiiGame)
+    {
+        return ACP_RESULT_SUCCESS; // return early if we're exiting from ProcUI
     }
 
     setDisplay(selectedDisplay);
 
-    //check if we need to update recent order
-    if (gDisplayOptionsOrder == DISPLAY_OPTIONS_ORDER_RECENT && selectedDisplay != recent[0]) {
-        //update recent order
-        if (selectedDisplay != recent[1]) {
-            if (selectedDisplay != recent[2]) {
+    // check if we need to update recent order
+    if (gDisplayOptionsOrder == DISPLAY_OPTIONS_ORDER_RECENT && selectedDisplay != recent[0])
+    {
+        // update recent order
+        if (selectedDisplay != recent[1])
+        {
+            if (selectedDisplay != recent[2])
+            {
                 recent[3] = recent[2];
             }
             recent[2] = recent[1];
@@ -499,7 +577,7 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
         recent[1] = recent[0];
         recent[0] = selectedDisplay;
 
-        //save new order to storage
+        // save new order to storage
         WUPSStorageAPI::Store("recent0", recent[0]);
         WUPSStorageAPI::Store("recent1", recent[1]);
         WUPSStorageAPI::Store("recent2", recent[2]);
@@ -513,7 +591,8 @@ DECL_FUNCTION(int32_t, ACPGetLaunchMetaXml, ACPMetaXml *metaXml)
 
 DECL_FUNCTION(bool, ErrEulaIsDecideSelectButtonError__3RplFv)
 {
-    if (sUserCancelledCustomDialogs) {
+    if (sUserCancelledCustomDialogs)
+    {
         sUserCancelledCustomDialogs = false;
         return true;
     }
@@ -524,12 +603,13 @@ static void patchNetConfigOverwrite()
 {
     if (initMocha() != MOCHA_RESULT_SUCCESS)
         return;
-    
+
     uint32_t data0 = 0;
     uint32_t data1 = 0;
     Mocha_IOSUKernelRead32(0x0503A1C4, &data0); // cmp r6,#0x3 ; bne LAB_0503a178
     Mocha_IOSUKernelRead32(0x0503A1FC, &data1); // adds r5,#0x18 ; add r3,sp,#0x330
-    if (data0 != 0x2E03D1D7 || data1 != 0x3518ABCC) {
+    if (data0 != 0x2E03D1D7 || data1 != 0x3518ABCC)
+    {
         Mocha_DeInitLibrary();
         return;
     }
@@ -547,7 +627,7 @@ DECL_FUNCTION(int32_t, CMPTExPrepareLaunch, uint32_t unk1, void *unk2, uint32_t 
         patchNetConfigOverwrite();
 
     int32_t result = real_CMPTExPrepareLaunch(unk1, unk2, unk3);
-    
+
     if (gPreserveSysconf && result == 0)
         backupSysconf();
     return result;
@@ -576,10 +656,12 @@ DECL_FUNCTION(int32_t, MCP_LaunchCompat, int32_t handle, void *confBuffer, uint3
 
 DECL_FUNCTION(int32_t, CMPTAcctSetDrcCtrlEnabled, int32_t enable)
 {
-    if (enable == 0 && !sLaunchingWiiGame) {
+    if (enable == 0 && !sLaunchingWiiGame)
+    {
         int8_t sensorBarEnabled = 0;
         VPADBASEGetSensorBarSetting(VPAD_CHAN_0, &sensorBarEnabled);
-        if (!sensorBarEnabled && VPADSetSensorBar(VPAD_CHAN_0, true) == 0) {
+        if (!sensorBarEnabled && VPADSetSensorBar(VPAD_CHAN_0, true) == 0)
+        {
             if (gNotificationTheme != NOTIFICATION_THEME_OFF)
                 NotificationModule_AddInfoNotification("GamePad sensor bar enabled");
         }
@@ -591,7 +673,8 @@ DECL_FUNCTION(int32_t, CMPTAcctSetDrcCtrlEnabled, int32_t enable)
 DECL_FUNCTION(int32_t, WPADProbe, WPADChan chan, WPADExtensionType *outExtensionType)
 {
     int32_t result = real_WPADProbe(chan, outExtensionType);
-    if (sInputRedirectionActive && result == 0 && outExtensionType && *outExtensionType == WPAD_EXT_PRO_CONTROLLER) {
+    if (sInputRedirectionActive && result == 0 && outExtensionType && *outExtensionType == WPAD_EXT_PRO_CONTROLLER)
+    {
         *outExtensionType = WPAD_EXT_CLASSIC;
     }
     return result;
@@ -605,7 +688,7 @@ ON_APPLICATION_REQUESTS_EXIT()
 #endif
 }
 
-//replace only for Wii U Menu process
+// replace only for Wii U Menu process
 WUPS_MUST_REPLACE_FOR_PROCESS(MCP_TitleList, WUPS_LOADER_LIBRARY_COREINIT, MCP_TitleList, WUPS_FP_TARGET_PROCESS_WII_U_MENU);
 WUPS_MUST_REPLACE_FOR_PROCESS(ACPGetLaunchMetaXml, WUPS_LOADER_LIBRARY_NN_ACP, ACPGetLaunchMetaXml, WUPS_FP_TARGET_PROCESS_WII_U_MENU);
 WUPS_MUST_REPLACE_FOR_PROCESS(ErrEulaIsDecideSelectButtonError__3RplFv, WUPS_LOADER_LIBRARY_ERREULA, ErrEulaIsDecideSelectButtonError__3RplFv, WUPS_FP_TARGET_PROCESS_WII_U_MENU);

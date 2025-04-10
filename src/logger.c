@@ -5,30 +5,36 @@
 #include <whb/log_udp.h>
 
 uint32_t moduleLogInit = false;
-uint32_t cafeLogInit   = false;
-uint32_t udpLogInit    = false;
+uint32_t cafeLogInit = false;
+uint32_t udpLogInit = false;
 #endif // DEBUG
 
-void initLogging() {
+void initLogging()
+{
 #ifdef DEBUG
-    if (!(moduleLogInit = WHBLogModuleInit())) {
+    if (!(moduleLogInit = WHBLogModuleInit()))
+    {
         cafeLogInit = WHBLogCafeInit();
-        udpLogInit  = WHBLogUdpInit();
+        udpLogInit = WHBLogUdpInit();
     }
 #endif // DEBUG
 }
 
-void deinitLogging() {
+void deinitLogging()
+{
 #ifdef DEBUG
-    if (moduleLogInit) {
+    if (moduleLogInit)
+    {
         WHBLogModuleDeinit();
         moduleLogInit = false;
     }
-    if (cafeLogInit) {
+    if (cafeLogInit)
+    {
         WHBLogCafeDeinit();
         cafeLogInit = false;
     }
-    if (udpLogInit) {
+    if (udpLogInit)
+    {
         WHBLogUdpDeinit();
         udpLogInit = false;
     }
