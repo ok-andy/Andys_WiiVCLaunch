@@ -1,4 +1,4 @@
-# Wii VC Launch
+# Andy's Wii VC Launch
 Wii U plugin to enhance launching Wii VC titles and Wii Mode.
 
 ## Features
