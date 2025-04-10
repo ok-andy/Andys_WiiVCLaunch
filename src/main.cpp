@@ -18,7 +18,7 @@
 #include <wups.h>
 
 // Mandatory plugin info
-WUPS_PLUGIN_NAME("Wii VC Launch");
+WUPS_PLUGIN_NAME("Andy's Wii VC Launch");
 WUPS_PLUGIN_DESCRIPTION(DESCRIPTION);
 WUPS_PLUGIN_VERSION(VERSION);
 WUPS_PLUGIN_AUTHOR("Lynx64/ok-andy");
